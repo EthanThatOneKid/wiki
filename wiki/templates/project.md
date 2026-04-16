@@ -1,6 +1,9 @@
 ---
-id: wiki:project-name
-type: Project
+"@context":
+  "@vocab": "https://schema.org/"
+  wiki: "https://zowiki.etok.me/wiki/"
+"@type": Project
+"@id": "wiki:project-name.md"
 name: Project Name
 status: active
 description: Brief summary.
