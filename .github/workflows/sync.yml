@@ -2,7 +2,7 @@ name: Sync with Upstream Template
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Daily at midnight
+    - cron: "0 0 * * *" # Daily at midnight
   workflow_dispatch: # Manual trigger
 
 jobs:
@@ -11,9 +11,9 @@ jobs:
     if: github.repository != 'EthanThatOneKid/zowiki' # Do not run on the template repo itself
     steps:
       - name: Checkout
-          uses: actions/checkout@v4
-          with:
-            fetch-depth: 0
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - name: Sync with Template
         run: |
           git config --global user.name 'github-actions[bot]'
