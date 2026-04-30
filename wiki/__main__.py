@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -37,6 +39,12 @@ def _add_frontmatter(subparsers) -> None:
     norm = sub.add_parser("normalize", help="normalize frontmatter property names")
     norm.add_argument("--dry-run", action="store_true", help="print what would change without changing it")
     sub.add_parser("convert", help="convert frontmatter to canonical JSON-LD")
+
+
+def _add_init(subparsers) -> None:
+    p = subparsers.add_parser("init", help="initialize a new wiki from a template")
+    p.add_argument("-t", "--template", default="default", help="template to use (default: default)")
+    p.add_argument("-d", "--dir", default=".", help="target directory (default: current directory)")
 
 
 def _run_sparql(args, book_root: Path) -> int:
@@ -139,6 +147,50 @@ def _run_frontmatter(args, book_root: Path) -> int:
     return 0
 
 
+def _run_init(args) -> int:
+    template_id = args.template
+    target_dir = Path(args.dir).resolve()
+
+    # Locate template directory
+    template_root = Path(__file__).resolve().parent / "templates"
+    template_path = template_root / template_id
+
+    if not template_path.is_dir():
+        print(f"Error: Template '{template_id}' not found in {template_root}", file=sys.stderr)
+        return 1
+
+    # Copy template to target directory
+    if target_dir.exists() and any(target_dir.iterdir()):
+        print(f"Error: Target directory '{target_dir}' is not empty", file=sys.stderr)
+        return 1
+
+    target_dir.mkdir(parents=True, exist_ok=True)
+
+    for item in template_path.iterdir():
+        dest = target_dir / item.name
+        if item.is_dir():
+            shutil.copytree(item, dest)
+        else:
+            shutil.copy2(item, dest)
+
+    print(f"Initialized wiki in {target_dir} using '{template_id}' template")
+
+    # Initialize git repository
+    try:
+        subprocess.run(["git", "init"], cwd=target_dir, check=True, capture_output=True)
+        subprocess.run(["git", "add", "."], cwd=target_dir, check=True, capture_output=True)
+        subprocess.run(
+            ["git", "commit", "-m", "Initial commit from wiki-framework template"],
+            cwd=target_dir, check=True, capture_output=True
+        )
+        print(f"Initialized git repository with initial commit")
+    except subprocess.CalledProcessError as e:
+        print(f"Warning: Failed to initialize git repo: {e}", file=sys.stderr)
+        return 0  # Not a fatal error
+
+    return 0
+
+
 def _find_wiki_root() -> Path:
     """Walk up from __file__ until we find a directory containing pyproject.toml."""
     current = Path(__file__).resolve().parent
@@ -159,8 +211,13 @@ def main() -> int:
     _add_sparql(subparsers)
     _add_shacl(subparsers)
     _add_frontmatter(subparsers)
+    _add_init(subparsers)
 
     args = parser.parse_args()
+
+    if args.subcommand == "init":
+        return _run_init(args)
+
     book_root = _find_wiki_root()
 
     if args.subcommand == "sparql":

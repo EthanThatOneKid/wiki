@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "wiki-framework"
 version = "0.1.0"
@@ -15,6 +19,9 @@ wiki = "wiki.__main__:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["wiki"]
+
+[tool.hatch.build.force-include]
+"wiki/templates" = "wiki/templates"
 
 [dependency-groups]
 dev = []
