@@ -1,19 +1,20 @@
 [project]
-name = "book"
+name = "wiki-framework"
 version = "0.1.0"
-description = "Living knowledge base with SHACL validation"
+description = "An opinionated, engine-agnostic wiki framework with SHACL validation"
 requires-python = ">=3.12"
 dependencies = [
     "rdflib",
     "pyshacl",
     "pyyaml",
+    "owlrl",
 ]
 
 [project.scripts]
-book-tool = "src.cli.main:main"
+wiki = "wiki.__main__:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["wiki"]
 
 [dependency-groups]
 dev = []
