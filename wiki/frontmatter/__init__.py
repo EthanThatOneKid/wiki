@@ -8,9 +8,10 @@ from pathlib import Path
 import yaml
 
 from ..sparql import (
-    parse_frontmatter,
     ensure_context,
+    parse_frontmatter,
 )
+
 
 def frontmatter_to_jsonld(file_path: Path) -> dict | None:
     """Parse and add context to frontmatter."""

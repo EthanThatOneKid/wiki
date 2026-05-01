@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 from rdflib import Graph
 
@@ -84,7 +83,7 @@ def validate_file(
     file_path: Path,
     shapes_dir: Path = SHAPES_DIR,
     verbose: bool = False,
-) -> Optional[bool]:
+) -> bool | None:
     """Validate a single markdown file. Returns None if no frontmatter."""
     data = frontmatter_from_path(file_path)
     if not data:

@@ -8,36 +8,61 @@ import subprocess
 import sys
 from pathlib import Path
 
+from .frontmatter import convert_all, normalize_all
 from .shacl import validate_all, validate_file, validate_summary
-from .sparql import load_graph, graph_stats, run_query, validate_query
-from .frontmatter import normalize_all, convert_all
+from .sparql import graph_stats, load_graph, run_query, validate_query
 
 
 def _add_sparql(subparsers) -> None:
     p = subparsers.add_parser("sparql", help="run a SPARQL SELECT or CONSTRUCT query")
     p.add_argument("query", nargs="+", help="SPARQL query string")
-    p.add_argument("-f", "--format", choices=["table", "json", "csv", "tsv", "turtle", "nt"], default="table")
+    p.add_argument(
+        "-f", "--format",
+        choices=["table", "json", "csv", "tsv", "turtle", "nt"],
+        default="table",
+    )
     p.add_argument("-o", "--output", help="write output to file")
-    p.add_argument("--construct", action="store_true", help=" shorthand for -f turtle")
-    p.add_argument("--dry-run", action="store_true", help="load graph and print stats, skip query")
-    p.add_argument("-v", "--verbose", action="store_true", help="print graph stats before results")
-    p.add_argument("--no-inference", action="store_true", help="skip OWL-RL inference (faster, raw data only)")
+    p.add_argument("--construct", action="store_true", help="shorthand for -f turtle")
+    p.add_argument(
+        "--dry-run", action="store_true",
+        help="load graph and print stats, skip query",
+    )
+    p.add_argument(
+        "-v", "--verbose",
+        action="store_true", help="print graph stats before results",
+    )
+    p.add_argument(
+        "--no-inference", action="store_true",
+        help="skip OWL-RL inference (faster, raw data only)",
+    )
 
 
 def _add_shacl(subparsers) -> None:
     p = subparsers.add_parser("shacl", help="validate frontmatter against SHACL shapes")
     sub = p.add_subparsers(dest="subcmd", required=True)
     validate = sub.add_parser("validate", help="validate wiki pages against SHACL shapes")
-    validate.add_argument("--summary", action="store_true", help="print per-file conformance summary")
-    validate.add_argument("-v", "--verbose", action="store_true", help="print full validation report")
-    validate.add_argument("file", nargs="?", help="validate a single file (by name or path)")
+    validate.add_argument(
+        "--summary", action="store_true",
+        help="print per-file conformance summary",
+    )
+    validate.add_argument(
+        "-v", "--verbose",
+        action="store_true", help="print full validation report",
+    )
+    validate.add_argument(
+        "file", nargs="?",
+        help="validate a single file (by name or path)",
+    )
 
 
 def _add_frontmatter(subparsers) -> None:
     p = subparsers.add_parser("frontmatter", help="frontmatter conversion and normalization")
     sub = p.add_subparsers(dest="subcmd", required=True)
     norm = sub.add_parser("normalize", help="normalize frontmatter property names")
-    norm.add_argument("--dry-run", action="store_true", help="print what would change without changing it")
+    norm.add_argument(
+        "--dry-run", action="store_true",
+        help="print what would change without changing it",
+    )
     sub.add_parser("convert", help="convert frontmatter to canonical JSON-LD")
 
 
@@ -74,7 +99,10 @@ def _run_sparql(args, book_root: Path) -> int:
 
     if args.verbose:
         stats = graph_stats(g)
-        print(f"Graph: {stats['subjects']} subjects, {stats['predicates']} predicates, {stats['triples']} triples\n")
+        msg = f"Graph: {stats['subjects']} subjects, "
+        msg += f"{stats['predicates']} predicates, "
+        msg += f"{stats['triples']} triples\n"
+        print(msg)
 
     output_format = "turtle" if args.construct else (args.format or "table")
     result = run_query(g, query, format=output_format)
@@ -183,7 +211,7 @@ def _run_init(args) -> int:
             ["git", "commit", "-m", "Initial commit from wiki-framework template"],
             cwd=target_dir, check=True, capture_output=True
         )
-        print(f"Initialized git repository with initial commit")
+        print("Initialized git repository with initial commit")
     except subprocess.CalledProcessError as e:
         print(f"Warning: Failed to initialize git repo: {e}", file=sys.stderr)
         return 0  # Not a fatal error

@@ -5,10 +5,10 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import yaml
-from rdflib import Graph, Literal, Namespace, RDF, RDFS, URIRef, OWL
+from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
 # Namespaces
@@ -49,7 +49,7 @@ def _kebab(s: str) -> str:
 # --- Frontmatter Logic ---
 
 
-def parse_frontmatter(content: str) -> Optional[dict]:
+def parse_frontmatter(content: str) -> dict | None:
     """Parse YAML or JSON frontmatter from markdown content."""
     if not content.startswith("---"):
         return None
@@ -86,7 +86,7 @@ def ensure_context(data: dict) -> dict:
     return data
 
 
-def frontmatter_to_dict(content: str) -> Optional[dict]:
+def frontmatter_to_dict(content: str) -> dict | None:
     """Parse and add context to frontmatter in one call."""
     data = parse_frontmatter(content)
     if not data:
@@ -95,7 +95,7 @@ def frontmatter_to_dict(content: str) -> Optional[dict]:
     return data
 
 
-def frontmatter_from_path(path: Path) -> Optional[dict]:
+def frontmatter_from_path(path: Path) -> dict | None:
     """Read a .md file and return its parsed, normalized frontmatter."""
     try:
         content = path.read_text(encoding="utf-8")
@@ -150,16 +150,16 @@ def _resolve_object(key: str, value: Any, graph: Graph, subject: URIRef) -> None
 
 
 def frontmatter_to_graph(
-    data: dict, base_uri: str = WIKI_BASE, file_id: Optional[str] = None
+    data: dict, base_uri: str = WIKI_BASE, file_id: str | None = None
 ) -> Graph:
     """Convert frontmatter dictionary to an RDF graph."""
     g = Graph()
     for prefix, ns in NAMESPACES.items():
         g.bind(prefix, ns)
- 
+
     if not data or "@type" not in data:
         return g
- 
+
     doc_id = data.get("@id")
     if not doc_id:
         if file_id:
@@ -217,7 +217,9 @@ def _build_name_to_id_map(wiki_dir: Path = WIKI_DIR) -> dict[str, str]:
             if not doc_id:
                 name = data.get("name", data.get("givenName", ""))
                 if data.get("givenName") and data.get("familyName"):
-                    doc_id = f"{WIKI_BASE}{_kebab(data['givenName'])}-{_kebab(data['familyName'])}.md"
+                    given = _kebab(data['givenName'])
+                    family = _kebab(data['familyName'])
+                    doc_id = f"{WIKI_BASE}{given}-{family}.md"
                 else:
                     doc_id = f"{WIKI_BASE}{_kebab(name)}.md"
 
@@ -285,7 +287,7 @@ def expand_with_owlrl(g: Graph) -> Graph:
 
 def load_graph(
     wiki_dir: Path = WIKI_DIR,
-    raw_dir: Optional[Path] = RAW_DIR,
+    raw_dir: Path | None = RAW_DIR,
     infer: bool = True,
 ) -> Graph:
     """Load all wiki (and optionally raw) markdown files into a single Graph."""
