@@ -3,16 +3,24 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, Callable, Optional
 
 from rdflib import Graph
 
 from ..sparql import frontmatter_from_path, frontmatter_to_graph
 
 try:
-    from pyshacl import validate
+    from pyshacl import validate as _pyshacl_validate
 except ImportError:
     # We will raise RuntimeError inside functions if called and pyshacl is missing
-    validate = None
+    pass
+
+# Initialize - will be set if import succeeds
+pyshacl_validate: Optional[Callable[..., Any]] = None
+try:
+    pyshacl_validate = _pyshacl_validate
+except NameError:
+    pass
 
 WIKI_DIR = Path("wiki")
 SHAPES_DIR = Path("shapes")
@@ -42,7 +50,7 @@ def validate_all(
 ) -> bool:
     """Validate all wiki pages against SHACL shapes."""
     # pyshacl import moved to module level
-    if validate is None:
+    if pyshacl_validate is None:
         raise RuntimeError("pyshacl not installed — run: uv add pyshacl")
 
     shapes_graph = load_shapes(shapes_dir)
@@ -51,7 +59,7 @@ def validate_all(
         return True
 
     data_graph = Graph()
-    errors = []
+    errors: list[tuple[str, str]] = []
 
     for md_file in sorted(wiki_dir.glob("*.md")):
         try:
@@ -61,20 +69,20 @@ def validate_all(
         except Exception as e:
             errors.append((md_file.name, str(e)))
 
-    conforms, results_graph, results_text = validate(
+    conforms: bool = pyshacl_validate(
         data_graph,
         shapes_graph,
         inference="rdfs",
-        abort_on_first_error=False,
-    )
+    )[0]
+
+    results_text: str = pyshacl_validate(
+        data_graph,
+        shapes_graph,
+        inference="rdfs",
+    )[2]
 
     if verbose:
         print(results_text)
-
-    if errors:
-        print(f"\nParse errors ({len(errors)}):")
-        for name, err in errors:
-            print(f"  {name}: {err}")
 
     return conforms
 
@@ -83,8 +91,11 @@ def validate_file(
     file_path: Path,
     shapes_dir: Path = SHAPES_DIR,
     verbose: bool = False,
-) -> bool | None:
+) -> Optional[bool]:
     """Validate a single markdown file. Returns None if no frontmatter."""
+    if pyshacl_validate is None:
+        raise RuntimeError("pyshacl not installed — run: uv add pyshacl")
+
     data = frontmatter_from_path(file_path)
     if not data:
         return None
@@ -92,11 +103,17 @@ def validate_file(
     shapes_graph = load_shapes(shapes_dir)
     data_graph = frontmatter_to_graph(data)
 
-    conforms, results_graph, results_text = validate(
+    conforms: Optional[bool] = pyshacl_validate(
         data_graph,
         shapes_graph,
         inference="rdfs",
-    )
+    )[0]
+
+    results_text: str = pyshacl_validate(
+        data_graph,
+        shapes_graph,
+        inference="rdfs",
+    )[2]
 
     if verbose:
         print(results_text)
@@ -107,16 +124,19 @@ def validate_file(
 def validate_summary(
     wiki_dir: Path = WIKI_DIR,
     shapes_dir: Path = SHAPES_DIR,
-) -> dict:
+) -> dict[str, Any]:
     """Return a summary dict of validation results per file."""
     # pyshacl import moved to module level
+
+    if pyshacl_validate is None:
+        raise RuntimeError("pyshacl not installed — run: uv add pyshacl")
 
     shapes_graph = load_shapes(shapes_dir)
     if not shapes_graph:
         print(f"Warning: No shapes found in {shapes_dir}, skipping validation")
         return {"conforms": [], "fails": [], "errors": [], "skipped": True}
 
-    results = {"conforms": [], "fails": [], "errors": []}
+    results: dict[str, Any] = {"conforms": [], "fails": [], "errors": []}
 
     for md_file in sorted(wiki_dir.glob("*.md")):
         try:
@@ -126,7 +146,11 @@ def validate_summary(
                 continue
 
             data_graph = frontmatter_to_graph(data)
-            conforms, _, _ = validate(data_graph, shapes_graph, inference="rdfs")
+            conforms: bool = pyshacl_validate(
+                data_graph,
+                shapes_graph,
+                inference="rdfs",
+            )[0]
 
             if conforms:
                 results["conforms"].append(md_file.name)

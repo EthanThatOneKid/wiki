@@ -13,7 +13,7 @@ from .shacl import validate_all, validate_file, validate_summary
 from .sparql import graph_stats, load_graph, run_query, validate_query
 
 
-def _add_sparql(subparsers) -> None:
+def _add_sparql(subparsers: argparse._SubParsersAction) -> None:
     p = subparsers.add_parser("sparql", help="run a SPARQL SELECT or CONSTRUCT query")
     p.add_argument("query", nargs="+", help="SPARQL query string")
     p.add_argument(
@@ -37,7 +37,7 @@ def _add_sparql(subparsers) -> None:
     )
 
 
-def _add_shacl(subparsers) -> None:
+def _add_shacl(subparsers: argparse._SubParsersAction) -> None:
     p = subparsers.add_parser("shacl", help="validate frontmatter against SHACL shapes")
     sub = p.add_subparsers(dest="subcmd", required=True)
     validate = sub.add_parser("validate", help="validate wiki pages against SHACL shapes")
@@ -55,7 +55,7 @@ def _add_shacl(subparsers) -> None:
     )
 
 
-def _add_frontmatter(subparsers) -> None:
+def _add_frontmatter(subparsers: argparse._SubParsersAction) -> None:
     p = subparsers.add_parser("frontmatter", help="frontmatter conversion and normalization")
     sub = p.add_subparsers(dest="subcmd", required=True)
     norm = sub.add_parser("normalize", help="normalize frontmatter property names")
@@ -66,13 +66,13 @@ def _add_frontmatter(subparsers) -> None:
     sub.add_parser("convert", help="convert frontmatter to canonical JSON-LD")
 
 
-def _add_init(subparsers) -> None:
+def _add_init(subparsers: argparse._SubParsersAction) -> None:
     p = subparsers.add_parser("init", help="initialize a new wiki from a template")
     p.add_argument("-t", "--template", default="default", help="template to use (default: default)")
     p.add_argument("-d", "--dir", default=".", help="target directory (default: current directory)")
 
 
-def _run_sparql(args, book_root: Path) -> int:
+def _run_sparql(args: argparse.Namespace, book_root: Path) -> int:
     wiki_dir = book_root / "wiki"
     raw_dir = book_root / "raw"
 
@@ -116,7 +116,7 @@ def _run_sparql(args, book_root: Path) -> int:
     return 0
 
 
-def _run_shacl(args, book_root: Path) -> int:
+def _run_shacl(args: argparse.Namespace, book_root: Path) -> int:
     wiki_dir = book_root / "wiki"
     shapes_dir = book_root / "shapes"
 
@@ -152,7 +152,7 @@ def _run_shacl(args, book_root: Path) -> int:
     return 0 if conforms else 1
 
 
-def _run_frontmatter(args, book_root: Path) -> int:
+def _run_frontmatter(args: argparse.Namespace, book_root: Path) -> int:
     wiki_dir = book_root / "wiki"
 
     if args.subcmd == "normalize":
@@ -175,7 +175,7 @@ def _run_frontmatter(args, book_root: Path) -> int:
     return 0
 
 
-def _run_init(args) -> int:
+def _run_init(args: argparse.Namespace) -> int:
     template_id = args.template
     target_dir = Path(args.dir).resolve()
 

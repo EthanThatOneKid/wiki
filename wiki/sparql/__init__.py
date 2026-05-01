@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Union
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 from rdflib import RDF, RDFS, Graph, Literal, Namespace, URIRef
 from rdflib.namespace import XSD
 
@@ -49,7 +49,7 @@ def _kebab(s: str) -> str:
 # --- Frontmatter Logic ---
 
 
-def parse_frontmatter(content: str) -> dict | None:
+def parse_frontmatter(content: str) -> Union[dict[Any, Any], None]:
     """Parse YAML or JSON frontmatter from markdown content."""
     if not content.startswith("---"):
         return None
@@ -75,7 +75,7 @@ def parse_frontmatter(content: str) -> dict | None:
 
 
 
-def ensure_context(data: dict) -> dict:
+def ensure_context(data: dict[Any, Any]) -> dict[Any, Any]:
     """Ensure @context is present with required namespaces."""
     if "@context" not in data:
         data["@context"] = {
@@ -112,7 +112,9 @@ def _resolve_predicate(key: str) -> URIRef:
     if ":" in key:
         prefix, name = key.split(":", 1)
         if prefix in NAMESPACES:
-            return NAMESPACES[prefix][name]
+            ns: Any = NAMESPACES[prefix]
+            if isinstance(ns, Namespace):
+                return ns[name]
     if key.startswith("wiki."):
         return WIKI[key[5:]]
     return SCHEMA[key]
