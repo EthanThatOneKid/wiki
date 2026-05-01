@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import yaml
+from typing import Any, Dict
+
+import yaml  # type: ignore[import-untyped]
 
 from ..sparql import (
     ensure_context,
@@ -24,9 +26,9 @@ def frontmatter_to_jsonld(file_path: Path) -> dict | None:
 def convert_all(
     wiki_dir: Path,
     dry_run: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     """Convert all .md files to JSON-LD and return a summary."""
-    results = {
+    results: dict[str, Any] = {
         "converted": [],
         "no_frontmatter": [],
         "errors": [],
@@ -91,20 +93,20 @@ def normalize_frontmatter_str(content: str) -> str:
     return f"---\n{new_fm}\n---" + (parts[2] if len(parts) > 2 else "")
 
 
-def normalize_all(wiki_dir: Path, dry_run: bool = False) -> dict:
+def normalize_all(wiki_dir: Path, dry_run: bool = False) -> dict[str, Any]:
     """Normalize frontmatter across all wiki files."""
-    results = {"fixed": 0, "skipped": 0, "errors": []}
+    results: dict[str, Any] = {"fixed": 0, "skipped": 0, "errors": []}
 
     for md_file in sorted(wiki_dir.glob("*.md")):
         try:
             original = md_file.read_text(encoding="utf-8")
             normalized = normalize_frontmatter_str(original)
             if normalized != original:
-                results["fixed"] += 1
+                results["fixed"] = results["fixed"] + 1
                 if not dry_run:
                     md_file.write_text(normalized, encoding="utf-8")
             else:
-                results["skipped"] += 1
+                results["skipped"] = results["skipped"] + 1
         except Exception as e:
             results["errors"].append({"file": md_file.name, "error": str(e)})
 

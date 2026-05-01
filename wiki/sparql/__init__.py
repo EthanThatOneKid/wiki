@@ -62,12 +62,12 @@ def parse_frontmatter(content: str) -> Union[dict[Any, Any], None]:
 
     if frontmatter_text.startswith("{"):
         try:
-            return json.loads(frontmatter_text)
+            return json.loads(frontmatter_text)  # type: ignore[no-any-return]
         except json.JSONDecodeError:
             return None
 
     try:
-        return yaml.safe_load(frontmatter_text)
+        return yaml.safe_load(frontmatter_text)  # type: ignore[no-any-return]
     except yaml.YAMLError:
         return None
 
@@ -114,10 +114,10 @@ def _resolve_predicate(key: str) -> URIRef:
         if prefix in NAMESPACES:
             ns: Any = NAMESPACES[prefix]
             if isinstance(ns, Namespace):
-                return ns[name]
+                return ns[name]  # type: ignore[index]
     if key.startswith("wiki."):
-        return WIKI[key[5:]]
-    return SCHEMA[key]
+        return WIKI[key[5:]]  # type: ignore[index]
+    return SCHEMA[key]  # type: ignore[index]
 
 
 def _resolve_object(key: str, value: Any, graph: Graph, subject: URIRef) -> None:
@@ -130,7 +130,7 @@ def _resolve_object(key: str, value: Any, graph: Graph, subject: URIRef) -> None
             if ":" in uri:
                 prefix, name = uri.split(":", 1)
                 if prefix in NAMESPACES:
-                    uri = str(NAMESPACES[prefix][name])
+                    uri = str(NAMESPACES[prefix][name])  # type: ignore[index]
             graph.add((subject, pred, URIRef(uri)))
         elif "@type" in value:
             blank = URIRef(f"_:blank-{_kebab(key)}-{id(value)}")
@@ -338,26 +338,26 @@ def run_query(
     """Run a SPARQL SELECT or CONSTRUCT query against the graph."""
     q = query.strip().upper()
     is_construct = q.startswith("CONSTRUCT")
-
+    
     if is_construct:
         result = graph.query(query)
         if format in ("turtle", "nt"):
-            return result.serialize(format=format)
-        return result.serialize(format="turtle")
-
+            return str(result.serialize(format=format))  # type: ignore[return-value]
+        return str(result.serialize(format="turtle"))  # type: ignore[return-value]
+    
     result = graph.query(query)
-
+    
     if format == "json":
-        return result.serialize(format="json")
+        return str(result.serialize(format="json"))  # type: ignore[return-value]
     elif format == "csv":
-        return result.serialize(format="csv")
+        return str(result.serialize(format="csv"))  # type: ignore[return-value]
     elif format == "tsv":
-        return result.serialize(format="tsv")
+        return str(result.serialize(format="tsv"))  # type: ignore[return-value]
     else:
         return _table_format(result)
 
 
-def _table_format(result) -> str:
+def _table_format(result) -> str:  # type: ignore[no-untyped-def]
     """Format SELECT results as a simple ASCII table."""
     rows = list(result)
     if not rows:
